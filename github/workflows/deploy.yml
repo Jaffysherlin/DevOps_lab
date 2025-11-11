@@ -1,11 +1,11 @@
-name: ci 
+name: ci_dockerhub
 
 on:
   push:
     branches:
-      -main
+      - main
 jobs:
-  build-test-push:
+  build-and-push:
     runs-on: ubuntu-latest
     steps:
       - name: checkout
@@ -13,20 +13,29 @@ jobs:
 
       - name: python setup
         uses: actions/setup-python@v5
-
+        with:
+          python-version: '3.11'
+      
       - name: install
-        runs: |
-          pip install -r requiremnets.txt
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-      - name: docker login
+      - name: login to dockerhub
         uses: docker/login-action@v3
         with:
-          username: ${{ DOCKER_USERNAME }}
-          password: ${{ DOCKER_TOKEN }}
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: build docker
-        uses: docker/build-login-action@v6
-        tags: jaffysherlin/flask-app
+      - name: build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            jaffysherlin/flask-app:latest
+            jaffysherlin/flask-app:${{github.sha}}
 
       - name: docker image
-        uses: docker image jaffysherlin/flask-app
+        run: docker images jaffysherlin/flask-app
+
